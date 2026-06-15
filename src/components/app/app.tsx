@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { useCo2Data } from '../../hooks/useCo2Data';
 import { LoadingSpinner } from '../loading-spinner/loading-spinner';
 import { SearchBar } from '../search-bar/search-bar';
@@ -11,7 +12,6 @@ import styles from './app.module.css';
 
 type AppState = {
   searchQuery: string;
-  selectedRegion: string;
   selectedYear: number;
   sortField: 'name' | 'population';
   sortOrder: 'asc' | 'desc';
@@ -24,7 +24,6 @@ export const App = () => {
 
   const [state, setState] = useState<AppState>({
     searchQuery: '',
-    selectedRegion: '',
     selectedYear: 2020,
     sortField: 'population',
     sortOrder: 'desc',
@@ -32,40 +31,50 @@ export const App = () => {
     isColumnModalOpen: false,
   });
 
-  const years = data ? getAvailableYears(data) : [];
-  const availableColumns = getAvailableColumns();
+  const years = useMemo(() => (data ? getAvailableYears(data) : []), [data]);
+  const availableColumns = useMemo(() => getAvailableColumns(), []);
 
-  const handleSearch = (value: string) => {
-    setState({ ...state, searchQuery: value });
-  };
+  const handleSearch = useCallback((value: string) => {
+    setState((currentState) => ({ ...currentState, searchQuery: value }));
+  }, []);
 
-  const handleYearChange = (year: number) => {
-    setState({ ...state, selectedYear: year });
-  };
+  const handleYearChange = useCallback((year: number) => {
+    setState((currentState) => ({ ...currentState, selectedYear: year }));
+  }, []);
 
-  const handleSortFieldChange = (field: 'name' | 'population') => {
-    setState({ ...state, sortField: field });
-  };
+  const handleSortFieldChange = useCallback((field: 'name' | 'population') => {
+    setState((currentState) => ({ ...currentState, sortField: field }));
+  }, []);
 
-  const handleSortOrderToggle = () => {
-    setState({
-      ...state,
-      sortOrder: state.sortOrder === 'asc' ? 'desc' : 'asc',
-    });
-  };
+  const handleSortFieldSelectChange = useCallback(
+    (event: ChangeEvent<HTMLSelectElement>) => {
+      handleSortFieldChange(event.target.value as 'name' | 'population');
+    },
+    [handleSortFieldChange]
+  );
 
-  const handleColumnToggle = (column: string) => {
-    setState({
-      ...state,
-      selectedColumns: state.selectedColumns.includes(column)
-        ? state.selectedColumns.filter((c) => c !== column)
-        : [...state.selectedColumns, column],
-    });
-  };
+  const handleSortOrderToggle = useCallback(() => {
+    setState((currentState) => ({
+      ...currentState,
+      sortOrder: currentState.sortOrder === 'asc' ? 'desc' : 'asc',
+    }));
+  }, []);
 
-  const handleModalToggle = () => {
-    setState({ ...state, isColumnModalOpen: !state.isColumnModalOpen });
-  };
+  const handleColumnToggle = useCallback((column: string) => {
+    setState((currentState) => ({
+      ...currentState,
+      selectedColumns: currentState.selectedColumns.includes(column)
+        ? currentState.selectedColumns.filter((c) => c !== column)
+        : [...currentState.selectedColumns, column],
+    }));
+  }, []);
+
+  const handleModalToggle = useCallback(() => {
+    setState((currentState) => ({
+      ...currentState,
+      isColumnModalOpen: !currentState.isColumnModalOpen,
+    }));
+  }, []);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -92,7 +101,7 @@ export const App = () => {
           <label className={styles.sortLabel}>Sort by:</label>
           <select
             value={state.sortField}
-            onChange={(e) => handleSortFieldChange(e.target.value as 'name' | 'population')}
+            onChange={handleSortFieldSelectChange}
             className={styles.sortSelect}
           >
             <option value="population">Population</option>
@@ -116,11 +125,9 @@ export const App = () => {
         countries={data}
         searchQuery={state.searchQuery}
         selectedColumns={state.selectedColumns}
-        selectedRegion={state.selectedRegion}
         selectedYear={state.selectedYear}
         sortField={state.sortField}
         sortOrder={state.sortOrder}
-        onYearChange={handleYearChange}
       />
 
       {/* Column Modal */}

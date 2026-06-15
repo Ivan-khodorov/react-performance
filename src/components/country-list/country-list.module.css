@@ -1,3 +1,21 @@
 .countryList {
+  box-sizing: border-box;
   padding: 16px;
+  height: 720px;
+  overflow-y: auto;
+  position: relative;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.virtualListSpacer {
+  position: relative;
+}
+
+.virtualListItem {
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
 }
